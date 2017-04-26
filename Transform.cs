@@ -461,10 +461,10 @@ namespace ReinlessLib
             byte[] rawOut = listRot.ToArray();
             return rawOut;
         }
-        public static byte[] HC_CropImage_Overlap(byte[] rawInput, int imageW, int imageH, byte[] cropImage, int cropW, int cropH, Rectangle roi)
+        public static byte[] HC_CropImage_Overlap(byte[] rawInput, int imageW, int imageH, byte[] cropImage, int cropW, int cropH, RectangleF rc)
         {
-            int posX = Convert.ToInt32(roi.X);
-            int posY = Convert.ToInt32(roi.Y);
+            int posX = Convert.ToInt32(rc.X);
+            int posY = Convert.ToInt32(rc.Y);
             Parallel.For(0, cropH, y => { Buffer.BlockCopy(cropImage, y * cropW, rawInput, (posY + y) * imageW + posX, cropW); });
             return rawInput;
         }

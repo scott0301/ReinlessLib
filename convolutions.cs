@@ -346,46 +346,79 @@ namespace ReinlessLib
 
             return fKernel;
         }
-        public static double[] HC_FILTER_GenerateLogFilter(int nKSize)
-        {
-            double[] fKernel = null;
-            if (nKSize == 3)
-            {
-                fKernel = new double []{ -1, -1, -1, -1, 8, -1, -1, -1, -1 };
-            }
-            else if (nKSize == 5)
-            {
-                fKernel = new double[]{ 0,0,  1,0,0, 
-                                        0,1,  2,1,0, 
-                                        1,2,-16,2,1, 
-                                        0,1,  2,1,0, 
-                                        0,0,  1,0,0};
-            }
-            else if (nKSize == 7)
-            {
-                fKernel = new double[] { 0, 0,  1,   1,  1, 0, 0, 
-                                         0, 1,  3,   3,  3, 1, 0, 
-                                         1, 3,  0, - 7,  0, 3, 1, 
-                                         1, 3, -7, -24, -7, 3, 1, 
-                                         1, 3,  0, - 7,  0, 3, 1, 
-                                         0, 1,  3,   3,  3, 1, 0, 
-                                         0, 0,  1,   1,  1, 0, 0 };
-            }
-            else if (nKSize == 9)
-            {
-                fKernel = new double[] { 0,0,3,  2,  2,  2,3,0,0,
-                                         0,2,3,  5,  5,  5,3,2,0,
-                                         3,3,5,  3,  0,  3,5,3,3,
-                                         2,5,3,-12,-23,-12,3,5,2,
-                                         2,5,0,-23,-40,-23,0,5,2,
-                                         2,5,3,-12,-23,-12,3,5,2,
-                                         3,3,5,  3,  0,  3,5,3,3,
-                                         0,2,3,  5,  5,  5,3,2,0,
-                                         0,0,3,  2,  2,  2,3,0,0};
-            }
-            return fKernel;
-        }
+
+
         #endregion
+
+        //*****************************************************************************************
+        // Laplacian of Gaussian 
+        //*****************************************************************************************
+
+        public static byte[] HC_FILTER_STD_Window(byte[] rawImage, int imageW, int imageH, RectangleF rc, int nKernelSize, double powValue = 0.5)
+        {
+            int cropW = (int)rc.Width;
+            int cropH = (int)rc.Height;
+            byte[] cropImage = HC_CropImage(rawImage, imageW, imageH, rc);
+
+            double[] fImageCrop = null;
+            Parallel.Invoke(() => { fImageCrop = cropImage.Select(element => (double)element).ToArray(); });
+
+            SaveImage(cropImage, cropW, cropH, "c:\\micle.bmp");
+
+            double[] meanPow = HC_CONV_GetMeanImage(fImageCrop, cropW, cropH, nKernelSize);
+            meanPow = HC_CONV_GetPowImage(meanPow);
+
+            double[] powMean = HC_CONV_GetPowImage(fImageCrop);
+            powMean = HC_CONV_GetMeanImage(powMean, cropW, cropH, 5);
+
+
+            //for (int i = 0; i < meanPow.Length; i++)
+            Parallel.For(0, meanPow.Length, i =>
+            {
+                double fValue1 = powMean[i];
+                double fValue2 = meanPow[i];
+                double fValue3 = fValue1 - fValue2;
+                double fvalue4 = Math.Pow(fValue3, powValue);
+
+                if (double.IsNaN(fvalue4) == true)
+                {
+                    fvalue4 = 0;
+                }
+
+                fImageCrop[i] = fvalue4;
+            });
+
+            byte[] cropRaw = HC_CONV_GetNormalizedImage(fImageCrop); ;
+
+            return HC_CropImage_Overlap(rawImage, imageW, imageH, cropRaw, cropW, cropH, rc);
+        }
+        public static byte[] HC_FILTER_STD(byte[] rawImage, int imageW, int imageH, int nKernelSize, double powValue = 0.5)
+        {
+            double[] fImage = rawImage.Select(element => (double)element).ToArray();
+
+            double[] meanPow = HC_CONV_GetMeanImage(fImage, imageW, imageH, nKernelSize);
+            meanPow = HC_CONV_GetPowImage(meanPow);
+
+            double[] powMean = HC_CONV_GetPowImage(fImage);
+            powMean = HC_CONV_GetMeanImage(powMean, imageW, imageH, nKernelSize);
+
+            for (int i = 0; i < meanPow.Length; i++)
+            //Parallel.For(0, meanPow.Length, i =>
+            {
+                double fValue1 = powMean[i];
+                double fValue2 = meanPow[i];
+                double fValue3 = fValue1 - fValue2;
+                double fvalue4 = Math.Pow(fValue3, powValue);
+
+                if (double.IsNaN(fvalue4) == true)
+                {
+                    fvalue4 = 0;
+                }
+
+                fImage[i] = fvalue4;
+            }
+            return HC_CONV_GetNormalizedImage(fImage); ;
+        }
 
         //*****************************************************************************************
         // Prewitt
@@ -581,21 +614,57 @@ namespace ReinlessLib
         // Laplacian of Gaussian
         //*****************************************************************************************
 
-        
+        #region LAPLACIAN of GAUSSIAN GRAY
+        public static double[] HC_FILTER_GetLogKernel(int nKSize)
+        {
+            double[] fKernel = null;
+            if (nKSize == 3)
+            {
+                fKernel = new double[] { -1, -1, -1, -1, 8, -1, -1, -1, -1 };
+            }
+            else if (nKSize == 5)
+            {
+                fKernel = new double[]{ 0,0,  1,0,0, 
+                                        0,1,  2,1,0, 
+                                        1,2,-16,2,1, 
+                                        0,1,  2,1,0, 
+                                        0,0,  1,0,0};
+            }
+            else if (nKSize == 7)
+            {
+                fKernel = new double[] { 0, 0,  1,   1,  1, 0, 0, 
+                                         0, 1,  3,   3,  3, 1, 0, 
+                                         1, 3,  0, - 7,  0, 3, 1, 
+                                         1, 3, -7, -24, -7, 3, 1, 
+                                         1, 3,  0, - 7,  0, 3, 1, 
+                                         0, 1,  3,   3,  3, 1, 0, 
+                                         0, 0,  1,   1,  1, 0, 0 };
+            }
+            else if (nKSize == 9)
+            {
+                fKernel = new double[] { 0,0,3,  2,  2,  2,3,0,0,
+                                         0,2,3,  5,  5,  5,3,2,0,
+                                         3,3,5,  3,  0,  3,5,3,3,
+                                         2,5,3,-12,-23,-12,3,5,2,
+                                         2,5,0,-23,-40,-23,0,5,2,
+                                         2,5,3,-12,-23,-12,3,5,2,
+                                         3,3,5,  3,  0,  3,5,3,3,
+                                         0,2,3,  5,  5,  5,3,2,0,
+                                         0,0,3,  2,  2,  2,3,0,0};
+            }
+            return fKernel;
+        }
         public static byte[] HC_FILTER_LofGauss_BIN(byte[] rawImage, int imageW, int imageH, int nKernelSize = 5)
         {
-            double[] kernel = HC_FILTER_GenerateLogFilter(nKernelSize);
+            double[] kernel = HC_FILTER_GetLogKernel(nKernelSize);
             
             byte[] res = HC_FILTER_Convolution(kernel, rawImage, imageW, imageH);
 
             return res;
         }
-      
-
-        #region LAPLACIAN of GAUSSIAN GRAY
         public static byte[] HC_FILTER_LofGauss_Gray(byte[] rawImage, int imageW, int imageH, int nKernelSize = 5)
         {
-            double[] kernel = HC_FILTER_GenerateLogFilter(nKernelSize);
+            double[] kernel = HC_FILTER_GetLogKernel(nKernelSize);
 
             double[] fImage = HC_CONV_Byte2Double(rawImage);
             fImage = HC_FILTER_Convolution(kernel, fImage, imageW, imageH);
@@ -696,7 +765,10 @@ namespace ReinlessLib
             {
                 for (int x = 0; x < imageW; x++)
                 {
-                    if (Math.Sqrt((nCenterX - x)*(nCenterX - x)) + ((nCenterY - y)*(nCenterY - y)) > 140)
+                    int dx = nCenterX - x;
+                    int dy = nCenterY - y;
+
+                    if (Math.Sqrt(dx*dx) + Math.Sqrt(dy*dy) > 140)
                     {
                         newRaw[y * imageW + x] = (byte)nonTargetValue;
                     }
@@ -710,10 +782,7 @@ namespace ReinlessLib
                             {
                                 for (int wx = x - GAP; wx < x + GAP; wx++)
                                 {
-
                                     arrWindow[index++] = rawImage[wy * imageW + wx];
-
-
                                 }
                             }
                             Array.Sort(arrWindow);

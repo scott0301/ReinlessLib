@@ -35,12 +35,11 @@ namespace ReinlessLib
         }
         #endregion
 
-   
-      
+        
+
         public static void HC_ARRAY_Dump(string strPath, double[] fArray, int w, int h)
         {
             string strBody = string.Empty;
-
 
             if (fArray.Length < w * h) return;
 
@@ -48,7 +47,6 @@ namespace ReinlessLib
             {
                 for (int x = 0; x < w; x++)
                 {
-
                     strBody += fArray[y * w + x].ToString() + ",";
                 }
                 strBody += System.Environment.NewLine;
@@ -92,21 +90,148 @@ namespace ReinlessLib
             System.IO.File.WriteAllText(strPath, strBody);
         }
 
-
-        public static int GetMaxElementPosition(double[] array)
+        /// <summary> 170426
+        /// Set the element values : all clear  = object type 
+        /// </summary>
+        /// <param name="array"></param>
+        /// <param name="fvalue"></param>
+        public static void HC_ARRAY_SetValue(ref object array, double fvalue)
         {
-            double fMax = array.Max();
-            int nIndex = Array.IndexOf(array, fMax);
+            if (array.GetType() == new double[0].GetType())
+            {
+                double[] fArray = (double[])array;
+                array = Enumerable.Repeat(fvalue, fArray.Length);
+            }
+            else if (array.GetType() == new float[0].GetType())
+            {
+                float[] fArray = (float[])array;
+                array = Enumerable.Repeat((float)fvalue, fArray.Length);
+            }
+            else if (array.GetType() == new int[0].GetType())
+            {
+                int[] nArray = (int[])array;
+                array = Enumerable.Repeat((int)fvalue, nArray.Length);
+            }
+            else if (array.GetType() == new byte[0].GetType())
+            {
+                byte[] byteArray = (byte[])array;
+                byte c = fvalue < 0 ? (byte)0 : fvalue > 255 ? (byte)255 : (byte)fvalue;
+                array = Enumerable.Repeat(c, byteArray.Length);
+            }
 
-            return nIndex;
         }
-        public static int GetMinElementPosition(double[] array)
-        {
-            double fMin = array.Min();
-            int nIndex = Array.IndexOf(array, fMin);
-            return nIndex;
-        }
-
         
+        /// <summary> 170426
+        /// Get the Max element Position From  the Input array = object type 
+        /// </summary>
+        /// <param name="array"></param>
+        /// <returns></returns>
+        public static int HC_ARRAY_GetMaxElementPosition(object array)
+        {
+            int nIndex = 0;
+
+            if (array.GetType() == new double[0].GetType())
+            {
+                double[] arrConv = (double[])array;
+                double max = arrConv.Max();
+                nIndex = Array.IndexOf(arrConv, max);
+            }
+            else if (array.GetType() == new float[0].GetType())
+            {
+                float[] arrConv = (float[])array;
+                float max = arrConv.Max();
+                nIndex = Array.IndexOf(arrConv, max);
+            }
+            else if (array.GetType() == new int[0].GetType())
+            {
+                int[] arrConv = (int[])array;
+                int max = arrConv.Max();
+                nIndex = Array.IndexOf(arrConv, max);
+            }
+            else if (array.GetType() == new byte[0].GetType())
+            {
+                byte[] arrConv = (byte[])array;
+                byte max = arrConv.Max();
+                nIndex = Array.IndexOf(arrConv, max);
+            }
+            return nIndex;
+        }
+        /// <summary> 170426
+        /// Get the Max element Position From  the Input array = object type 
+        /// </summary>
+        /// <param name="array"></param>
+        /// <returns></returns>
+        public static int HC_ARRAY_GetMinElementPosition(object array)
+        {
+            int nIndex = 0;
+
+            if (array.GetType() == new double[0].GetType())
+            {
+                double[] arrConv = (double[])array;
+                double min = arrConv.Min();
+                nIndex = Array.IndexOf(arrConv, min);
+            }
+            else if (array.GetType() == new float[0].GetType())
+            {
+                float[] arrConv = (float[])array;
+                float min = arrConv.Min();
+                nIndex = Array.IndexOf(arrConv, min);
+            }
+            else if (array.GetType() == new int[0].GetType())
+            {
+                int[] arrConv = (int[])array;
+                int min = arrConv.Min();
+                nIndex = Array.IndexOf(arrConv, min);
+            }
+            else if (array.GetType() == new byte[0].GetType())
+            {
+                byte[] arrConv = (byte[])array;
+                byte min = arrConv.Min();
+                nIndex = Array.IndexOf(arrConv, min);
+            }
+            return nIndex;
+        }
+
+        public static int HC_ARRAY_GetMatchedCount(object array, double fValue)
+        {
+            int nCount = 0;
+
+            if (array.GetType() == new double[0].GetType())
+            {
+                double[] arrConv = (double[])array;
+                nCount = Array.FindAll(arrConv, element => element == fValue).Length;
+            }
+            else if (array.GetType() == new float[0].GetType())
+            {
+                float[] arrConv = (float[])array;
+                nCount = Array.FindAll(arrConv, element => element == (float)fValue).Length;
+            }
+            else if (array.GetType() == new int[0].GetType())
+            {
+                int[] arrConv = (int[])array;
+                nCount = Array.FindAll(arrConv, element => element == (int)fValue).Length;
+            }
+            else if (array.GetType() == new byte[0].GetType())
+            {
+                byte[] arrConv = (byte[])array;
+            }
+            return nCount;
+        }
+
+        static int SortDoubleInt(KeyValuePair<double, int> a, KeyValuePair<double, int> b)
+        {
+            return b.Key.CompareTo(a.Key);
+        }
+
+        public static float[] GetElements_X(List<PointF> list)
+        {
+            float[] arrX = (float[])list.Select(element => element.X).ToArray();
+            return arrX;
+        }
+        public static float[] GetElements_Y(List<PointF> list)
+        {
+            float[] arrY = (float[])list.Select(element => element.Y).ToArray();
+            return arrY;
+        }
     }
 }

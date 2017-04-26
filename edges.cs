@@ -157,7 +157,7 @@ namespace ReinlessLib
         // variation 0 : falling 255 -> 0
         // dir : to upside = -1
         // dir : to down size = 1
-        static public List<PointF> GetHorizontalEdgesBinary(byte[] rawImage, int imageW, int imageH, int variation, int dir = -1)
+        static public List<PointF> HC_EDGE_GetHorizontalEdgesBinary(byte[] rawImage, int imageW, int imageH, int variation, int dir = -1)
         {
             List<PointF> listEdges = new List<PointF>();
 
@@ -204,7 +204,9 @@ namespace ReinlessLib
         }
 
 
-       
+        //******************************************************************************************
+        // Point selection
+        //******************************************************************************************
 
         /// <summary>
         /// Take the Positional [Left/Top/Right/Bottom] From the arbitrary Point Lists.
@@ -224,7 +226,7 @@ namespace ReinlessLib
 
             for (int i = 0; i < ptList.Count; i++)
             {
-                if (HC_EDGE_IsIntersectTriangleAndPoint(ptList.ElementAt(i), ptA, ptB, ptC) == true)
+                if (_IsIntersectTriangleAndPoint(ptList.ElementAt(i), ptA, ptB, ptC) == true)
                 {
                     ptListTop.Add(ptList.ElementAt(i));
                 }
@@ -241,7 +243,7 @@ namespace ReinlessLib
 
             for (int i = 0; i < ptList.Count; i++)
             {
-                if (HC_EDGE_IsIntersectTriangleAndPoint(ptList.ElementAt(i), ptA, ptB, ptC) == true)
+                if (_IsIntersectTriangleAndPoint(ptList.ElementAt(i), ptA, ptB, ptC) == true)
                 {
                     ptListBTM.Add(ptList.ElementAt(i));
                 }
@@ -258,7 +260,7 @@ namespace ReinlessLib
 
             for (int i = 0; i < ptList.Count; i++)
             {
-                if (HC_EDGE_IsIntersectTriangleAndPoint(ptList.ElementAt(i), ptA, ptB, ptC) == true)
+                if (_IsIntersectTriangleAndPoint(ptList.ElementAt(i), ptA, ptB, ptC) == true)
                 {
                     ptListLFT.Add(ptList.ElementAt(i));
                 }
@@ -275,14 +277,14 @@ namespace ReinlessLib
 
             for (int i = 0; i < ptList.Count; i++)
             {
-                if (HC_EDGE_IsIntersectTriangleAndPoint(ptList.ElementAt(i), ptA, ptB, ptC) == true)
+                if (_IsIntersectTriangleAndPoint(ptList.ElementAt(i), ptA, ptB, ptC) == true)
                 {
                     ptListRHT.Add(ptList.ElementAt(i));
                 }
             }
             return ptListRHT;
         }
-        static public bool HC_EDGE_IsIntersectTriangleAndPoint(PointF ptS, PointF ptA, PointF ptB, PointF ptC)
+        static public bool _IsIntersectTriangleAndPoint(PointF ptS, PointF ptA, PointF ptB, PointF ptC)
         {
             double diffSA_X = ptS.X - ptA.X;
             double diffSA_Y = ptS.Y - ptA.Y;
@@ -296,6 +298,26 @@ namespace ReinlessLib
             return true;
         }
 
+        /// <summary>
+        /// 특정 형태 영역(Elliptical)에 포함된 영역의 점들을 털어내서 구한다. 
+        /// </summary>
+        /// <param name="rc"></param>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        public static List<PointF> HC_EDGE_GetFilteredEllipsePoints(RectangleF rc, List<PointF> list)
+        {
+            System.Drawing.Drawing2D.GraphicsPath myPath = new System.Drawing.Drawing2D.GraphicsPath();
+            myPath.AddEllipse(rc);
+
+            List<PointF> listTemp = new List<PointF>();
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                PointF pt = list.ElementAt(i);
+                if (myPath.IsVisible(pt) == true) { listTemp.Add(pt); }
+            }
+            return listTemp;
+        }
         // 최장 거리 라인 추출 -->  최장 거리 라인 대비 대각선 라인 추출
         // 사각형일경우 최장축 기준 대각이 거의 유사해야 되니까.
         static public void /****/HC_EDGE_GetCrossLine(List<PointF> ptList, ref CLine l1, ref CLine l2)
@@ -361,10 +383,10 @@ namespace ReinlessLib
             l2 = line2;
         }
 
-        static int SortDoubleInt(KeyValuePair<double, int> a, KeyValuePair<double, int> b)
-        {
-            return b.Key.CompareTo(a.Key);
-        }
+
+        //******************************************************************************************
+        // Fitting Functions 
+        //******************************************************************************************
 
         static public CLine HC_EDGE_FitLineHor(List<PointF> listPoints, int w, int h)
         {
@@ -456,7 +478,7 @@ namespace ReinlessLib
             return ptRotated;
         }
 
-        public static void HC_FIT_Circle(List<PointF> list, ref PointF ptCenter, ref double radius)
+        public static void /******/HC_FIT_Circle(List<PointF> list, ref PointF ptCenter, ref double radius)
         {
             double sx = 0.0, sy = 0.0;
             double sx2 = 0.0, sy2 = 0.0, sxy = 0.0;
@@ -515,7 +537,7 @@ namespace ReinlessLib
 
             double ptCX = 0;
             double ptCY = 0;
-            HC_FIT_EllipseParamSet(ptListTarget, out ptCX, out ptCY, out A, out B, out cos_phi, out sin_phi);
+            _EllipseParamSet(ptListTarget, out ptCX, out ptCY, out A, out B, out cos_phi, out sin_phi);
 
             List<PointF> ptContourList = HC_FIT_EllipseGenContour(density, ptCX, ptCY, A, B, cos_phi, sin_phi);
 
@@ -569,7 +591,7 @@ namespace ReinlessLib
 
             return ptList;
         }
-        public static void HC_FIT_EllipseParamSet(List<PointF> ptListTarget, out double ptCX, out double ptCY, out double A, out double B, out double cos_phi, out double sin_phi)
+        public static void _EllipseParamSet(List<PointF> ptListTarget, out double ptCX, out double ptCY, out double A, out double B, out double cos_phi, out double sin_phi)
         {
             if (ptListTarget.Count == 0)
             {
@@ -738,28 +760,26 @@ namespace ReinlessLib
             }
         }
 
-        /// <summary>
-        /// 특정 형태 영역(Elliptical)에 포함된 영역의 점들을 털어내서 구한다. 
-        /// </summary>
-        /// <param name="rc"></param>
-        /// <param name="list"></param>
-        /// <returns></returns>
-        public static List<PointF> GetFilteredEllipsePoints(RectangleF rc, List<PointF> list)
+        //*******************************************************************************************
+        // 2nd Derivative based Edge detection functions 
+        //*******************************************************************************************
+        
+        public static double[] HC_EDGE_Get2ndDerivativeArrayFromLineBuff(double[] fLineBuff)
         {
-            System.Drawing.Drawing2D.GraphicsPath myPath = new System.Drawing.Drawing2D.GraphicsPath();
-            myPath.AddEllipse(rc);
+            double[] arr1st = new double[fLineBuff.Length - 1];
+            double[] arr2nd = new double[fLineBuff.Length - 2];
 
-            List<PointF> listTemp = new List<PointF>();
-
-            for (int i = 0; i < list.Count; i++)
+            for (int i = 0; i < fLineBuff.Length - 1; i++)
             {
-                PointF pt = list.ElementAt(i);
-                if (myPath.IsVisible(pt) == true) { listTemp.Add(pt); }
+                arr1st[i] = fLineBuff[i + 1] - fLineBuff[i];
             }
-            return listTemp;
+            for (int i = 0; i < arr1st.Length - 1 + 0; i++)
+            {
+                arr2nd[i] = arr1st[i + 1] - arr1st[i];
+            }
+            return arr2nd;
         }
-
-        public static double Get2ndDerivativeLine_MaxPos(byte[] line)
+        public static double HC_EDGE_Get2ndDerivativeLine_MaxPos(byte[] line)
         {
             double[] buff_1st = new double[line.Length - 1];
             double[] buff_2nd = new double[line.Length - 2];
@@ -776,7 +796,7 @@ namespace ReinlessLib
 
             return fSubPixel + nPos;
         }
-        public static double Get2ndDerivativeLine_MinPos(byte[] line)
+        public static double HC_EDGE_Get2ndDerivativeLine_MinPos(byte[] line)
         {
             double[] buff_1st = new double[line.Length - 1];
             double[] buff_2nd = new double[line.Length - 2];
@@ -794,7 +814,9 @@ namespace ReinlessLib
             return fSubPixel + nPos;
         }
 
-        public static List<PointF> Get2ndDerivativeList_HorMax(byte[] rawImage, int imageW, int imageH)
+        // 대각선같이 기준선이 있을때 측정 축에 대하여 만족하는 2차미분 포지션 추출
+        // 후처리로, 특정 기준선(사선) 개별 포인트에 해당 위치를 더해서, 사선엣지를 구할때 쓴다. 
+        public static List<PointF> HC_EDGE_Get2ndDerivativeList_HorMax(byte[] rawImage, int imageW, int imageH)
         {
             double[] buff_1st = new double[imageW - 1];
             double[] buff_2nd = new double[imageW - 2];
@@ -827,7 +849,7 @@ namespace ReinlessLib
             }
             return list;
         }
-        public static List<PointF> Get2ndDerivativeList_HorMin(byte[] rawImage, int imageW, int imageH)
+        public static List<PointF> HC_EDGE_Get2ndDerivativeList_HorMin(byte[] rawImage, int imageW, int imageH)
         {
             double[] buff_1st = new double[imageW - 1];
             double[] buff_2nd = new double[imageW - 2];
@@ -860,11 +882,608 @@ namespace ReinlessLib
             }
             return list;
         }
+
+        // 3개의 값을 기준으로 (전,중,후) 가중치 값을 계산, 2차 미분값 위치가 정해진 경우, 미세보정 용도
         public static double _GetSubPixel(double pa, double pb, double pc)
         {
             // simple quadratic interpolation
             return 0.5 * (pa - pc) / (pa - (2 * pb) + pc);
         }
+
+        // relative function 1: GetPojection[POS]_For[DIR]_Derivative { Get Projection for each direction }
+        // relative function 2: ReplaceDerivative_[DIR]_Average  { Replace by representative Position and make point list} 170419 
+        // 2차 미분을 위해서, 영역과 방향에 따라, 평균 projection 값 생성해서 축에 대한 단일 2차 미분 array 반환 
+        public static double[]/***/HC_EDGE_GetProjection_TOP_For_Hor_Derivative(byte[] rawImage, int imageW, int imageH, RectangleF rc, int nDir)
+        {
+            const int DIR_INFALL = 0;      // Direction = To Inside Falling
+            const int DIR_INRISE = 1;      // Direction = to Inside Rising
+            const int DIR_EXFALL = 2;      // Direction = to outside Falling
+            const int DIR_EXRISE = 3;      // direction = to Outside Rising
+
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            double[] buff_Org = new double[(int)rc.Height + 2];
+
+            if (nDir == DIR_INFALL || nDir == DIR_INRISE)
+            {
+                for (int y = sy; y < ey + 2; y++)
+                {
+                    for (int x = sx; x < ex; x++)
+                    {
+                        buff_Org[y - sy] += rawImage[y * imageW + x];
+                    }
+                    buff_Org[y - sy] /= (double)rc.Width;
+                }
+            }
+            else if (nDir == DIR_EXFALL || nDir == DIR_EXRISE)
+            {
+                for (int y = ey - 1, nIndex = 0; y >= sy - 2; y--)
+                {
+                    for (int x = sx; x < ex; x++)
+                    {
+                        buff_Org[nIndex] += rawImage[y * imageW + x];
+                    }
+                    buff_Org[nIndex++] /= (double)rc.Width;
+                }
+            }
+
+            return HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+        }
+        public static double[]/***/HC_EDGE_GetProjection_BTM_For_Hor_Derivative(byte[] rawImage, int imageW, int imageH, RectangleF rc, int nDir)
+        {
+            const int DIR_INFALL = 0;      // Direction = To Inside Falling
+            const int DIR_INRISE = 1;      // Direction = to Inside Rising
+            const int DIR_EXFALL = 2;      // Direction = to outside Falling
+            const int DIR_EXRISE = 3;      // direction = to Outside Rising
+
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            double[] buff_Org = new double[(int)rc.Height + 2];
+
+            if (nDir == DIR_INFALL || nDir == DIR_INRISE)
+            {
+                for (int y = ey - 1, nIndex = 0; y >= sy - 2; y--)
+                {
+                    for (int x = sx; x < ex; x++)
+                    {
+                        buff_Org[nIndex] += rawImage[y * imageW + x];
+                    }
+                    buff_Org[nIndex++] /= (double)rc.Width;
+                }
+            }
+            else if (nDir == DIR_EXFALL || nDir == DIR_EXRISE)
+            {
+                for (int y = sy; y < ey + 2; y++)
+                {
+                    for (int x = sx; x < ex; x++)
+                    {
+                        buff_Org[y - sy] += rawImage[y * imageW + x];
+                    }
+                    buff_Org[y - sy] /= (double)rc.Width;
+                }
+            }
+
+            return HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+        }
+
+        public static double[]/***/HC_EDGE_GetProjection_LFT_For_VER_Derivative(byte[] rawImage, int imageW, int imageH, RectangleF rc, int nDir)
+        {
+            const int DIR_INFALL = 0;      // Direction = To Inside Falling
+            const int DIR_INRISE = 1;      // Direction = to Inside Rising
+            const int DIR_EXFALL = 2;      // Direction = to outside Falling
+            const int DIR_EXRISE = 3;      // direction = to Outside Rising
+
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            double[] buff_Org = new double[(int)rc.Width + 2];
+
+            if (nDir == DIR_INFALL || nDir == DIR_INRISE)
+            {
+                for (int x = sx; x < ex + 2; x++)
+                {
+                    for (int y = sy; y < ey; y++)
+                    {
+                        buff_Org[x - sx] += rawImage[y * imageW + x];
+                    }
+                    buff_Org[x - sx] /= (double)rc.Width;
+                }
+            }
+            else if (nDir == DIR_EXFALL || nDir == DIR_EXRISE)
+            {
+                for (int x = ex - 1, idx = 0; x >= sx - 2; x--)
+                {
+                    for (int y = sy; y < ey; y++)
+                    {
+                        buff_Org[idx] += rawImage[y * imageW + x];
+                    }
+                    buff_Org[idx++] /= (double)rc.Width;
+                }
+            }
+
+            return HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+        }
+        public static double[]/***/HC_EDGE_GetProjection_RHT_For_VER_Derivative(byte[] rawImage, int imageW, int imageH, RectangleF rc, int nDir)
+        {
+            const int DIR_INFALL = 0;      // Direction = To Inside Falling
+            const int DIR_INRISE = 1;      // Direction = to Inside Rising
+            const int DIR_EXFALL = 2;      // Direction = to outside Falling
+            const int DIR_EXRISE = 3;      // direction = to Outside Rising
+
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            double[] buff_Org = new double[(int)rc.Width + 2];
+
+            if (nDir == DIR_INFALL || nDir == DIR_INRISE)
+            {
+                for (int x = ex - 1, idx = 0; x >= sx - 2; x--)
+                {
+                    for (int y = sy; y < ey; y++)
+                    {
+                        buff_Org[idx] += rawImage[y * imageW + x];
+                    }
+                    buff_Org[idx++] /= (double)rc.Width;
+                }
+            }
+            else if (nDir == DIR_EXFALL || nDir == DIR_EXRISE)
+            {
+                for (int x = sx; x < ex + 2; x++)
+                {
+                    for (int y = sy; y < ey; y++)
+                    {
+                        buff_Org[x - sx] += rawImage[y * imageW + x];
+                    }
+                    buff_Org[x - sx] /= (double)rc.Width;
+                }
+            }
+
+            return HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+        }
+
+        // 주어진 profile 값에서 min/max pos 결정 + 서브 픽셀링 하여, rectangle 값에 대입하여 방향에 따라 라인 결정해서 축에 대해 일괄 적용 후 반환
+        public static List<PointF> HC_EDGE_ReplacePointList_Derivative_HOR_Average(double[] buff_Line, RectangleF rc, bool bTarget_TOP, int nDir)
+        {
+            const int DIR_INFALL = 0;      // Direction = To Inside Falling
+            const int DIR_INRISE = 1;      // Direction = to Inside Rising
+            const int DIR_EXFALL = 2;      // Direction = to outside Falling
+            const int DIR_EXRISE = 3;      // direction = to Outside Rising
+
+            List<PointF> listFiltered = new List<PointF>();
+
+            int posMax = HC_ARRAY_GetMinElementPosition(buff_Line);
+            int posMin = HC_ARRAY_GetMaxElementPosition(buff_Line);
+
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+
+            double fSubPixel = 0.0;
+
+            if (bTarget_TOP == true)
+            {
+                if (nDir == DIR_INFALL)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMin);
+                    for (int x = sx; x < ex; x++) { listFiltered.Add(new PointF(x, (float)(sy + posMin + fSubPixel))); }
+                }
+                else if (nDir == DIR_INRISE)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMax);
+                    for (int x = sx; x < ex; x++) { listFiltered.Add(new PointF(x, (float)(sy + posMax + fSubPixel))); }
+                }
+                else if (nDir == DIR_EXRISE)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMax);
+                    for (int x = sx; x < ex; x++) { listFiltered.Add(new PointF(x, (float)(ey - posMax - fSubPixel))); }
+                }
+                else if (nDir == DIR_EXFALL)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMin);
+                    for (int x = sx; x < ex; x++) { listFiltered.Add(new PointF(x, (float)(ey - posMin - fSubPixel))); }
+                }
+            }
+            else if (bTarget_TOP == false)
+            {
+                if (nDir == DIR_INRISE)
+                {
+
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMax);
+                    for (int x = sx; x < ex; x++) { listFiltered.Add(new PointF(x, (float)(ey - posMax - fSubPixel))); }
+                }
+                else if (nDir == DIR_INFALL)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMin);
+                    for (int x = sx; x < ex; x++) { listFiltered.Add(new PointF(x, (float)(ey - posMin - fSubPixel))); }
+                }
+                else if (nDir == DIR_EXRISE)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMax);
+                    for (int x = sx; x < ex; x++) { listFiltered.Add(new PointF(x, (float)(sy + posMax + fSubPixel))); }
+                }
+                else if (nDir == DIR_EXFALL)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMin);
+                    for (int x = sx; x < ex; x++) { listFiltered.Add(new PointF(x, (float)(sy + posMin + fSubPixel))); }
+                }
+            }
+
+            return listFiltered;
+        }
+        public static List<PointF> HC_EDGE_ReplacePointList_Derivative_VER_Average(double[] buff_Line, RectangleF rc, bool bTarget_LFT, int nDir)
+        {
+            const int DIR_INFALL = 0;      // Direction = To Inside Falling
+            const int DIR_INRISE = 1;      // Direction = to Inside Rising
+            const int DIR_EXFALL = 2;      // Direction = to outside Falling
+            const int DIR_EXRISE = 3;      // direction = to Outside Rising
+
+            List<PointF> listFiltered = new List<PointF>();
+
+            int posMax = HC_ARRAY_GetMinElementPosition(buff_Line);
+            int posMin = HC_ARRAY_GetMaxElementPosition(buff_Line);
+
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            double fSubPixel = 0.0;
+
+            if (bTarget_LFT == true)
+            {
+                if (nDir == DIR_INFALL)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMin);
+                    for (int y = sy; y < ey; y++) { listFiltered.Add(new PointF((float)(sx + posMin + fSubPixel), y)); }
+                }
+                else if (nDir == DIR_INRISE)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMax);
+                    for (int y = sy; y < ey; y++) { listFiltered.Add(new PointF((float)(sx + posMax + fSubPixel), y)); }
+                }
+                else if (nDir == DIR_EXFALL)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMin);
+                    for (int y = sy; y < ey; y++) { listFiltered.Add(new PointF((float)(ex - posMin - fSubPixel), y)); }
+                }
+                else if (nDir == DIR_EXRISE)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMax);
+                    for (int y = sy; y < ey; y++) { listFiltered.Add(new PointF((float)(ex - posMax - fSubPixel), y)); }
+                }
+            }
+            else if (bTarget_LFT == false)
+            {
+                if (nDir == DIR_INFALL)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMin);
+                    for (int y = sy; y < ey; y++) { listFiltered.Add(new PointF((float)(ex - posMin - fSubPixel), y)); }
+                }
+                else if (nDir == DIR_INRISE)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMax);
+                    for (int y = sy; y < ey; y++) { listFiltered.Add(new PointF((float)(ex - posMax - fSubPixel), y)); }
+                }
+                else if (nDir == DIR_EXFALL)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMin);
+                    for (int y = sy; y < ey; y++) { listFiltered.Add(new PointF((float)(sx + posMin + fSubPixel), y)); }
+                }
+                else if (nDir == DIR_EXRISE)
+                {
+                    fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Line, posMax);
+                    for (int y = sy; y < ey; y++) { listFiltered.Add(new PointF((float)(sx + posMax + fSubPixel), y)); }
+                }
+            }
+
+            return listFiltered;
+        }
+
+        // get the every raw points based on directional 2nd derivative 170419 
+        // this functions prepared for the point filtering or fitting which has outliers.
+        public static List<PointF> HC_EDGE_GetPointList_Derivative_HOR(byte[] rawImage, int imageW, int imageH, RectangleF rc, bool bTarget_TOP, int nDir)
+        {
+            const int DIR_INFALL = 0;      // Direction = To Inside Falling
+            const int DIR_INRISE = 1;      // Direction = to Inside Rising
+            const int DIR_EXFALL = 2;      // Direction = to outside Falling
+            const int DIR_EXRISE = 3;      // direction = to Outside Rising
+
+            List<PointF> list = new List<PointF>();
+
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            double fSubPixel = 0.0;
+
+            double[] buff_Org = new double[(int)rc.Height + 2];
+
+            if (bTarget_TOP == true)
+            {
+                #region FOR TOP REGION : IN-RISE & IN-FALL
+                if (nDir == DIR_INFALL || nDir == DIR_INRISE)
+                {
+                    for (int x = sx; x < ex; x++)
+                    {
+                        Array.Clear(buff_Org, 0, buff_Org.Length);
+                        for (int y = sy, nIndex = 0; y < ey + 2; y++)
+                        {
+                            buff_Org[nIndex++] = rawImage[y * imageW + x];
+                        }
+                        double[] buff_2nd = HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+
+                        if (nDir == DIR_INFALL)
+                        {
+                            int maxPos = HC_ARRAY_GetMaxElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, maxPos);
+
+                            list.Add(new PointF(x, (float)(sy + maxPos + fSubPixel)));
+                        }
+                        else if (nDir == DIR_INRISE)
+                        {
+                            int minPos = HC_ARRAY_GetMinElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, minPos);
+
+                            list.Add(new PointF(x, (float)(sy + minPos + fSubPixel)));
+                        }
+                    }
+                }
+                #endregion
+
+                #region FOR TOP REGION : IN-RISE AND IN-FALL
+
+                else if (nDir == DIR_EXFALL || nDir == DIR_EXRISE)
+                {
+                    for (int x = sx; x < ex; x++)
+                    {
+                        Array.Clear(buff_Org, 0, buff_Org.Length);
+                        for (int y = ey - 1, nIndex = 0; y >= sy - 2; y--)
+                        {
+                            buff_Org[nIndex++] = rawImage[y * imageW + x];
+                        }
+                        double[] buff_Top_2nd = HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+
+                        if (nDir == DIR_EXFALL)
+                        {
+                            int maxPos = HC_ARRAY_GetMaxElementPosition(buff_Top_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Top_2nd, maxPos);
+
+                            list.Add(new PointF(x, (float)(ey - maxPos - fSubPixel)));
+                        }
+                        else if (nDir == DIR_EXRISE)
+                        {
+                            int minPos = HC_ARRAY_GetMinElementPosition(buff_Top_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_Top_2nd, minPos);
+                            list.Add(new PointF(x, (float)(ey - minPos - fSubPixel)));
+                        }
+                    }
+                }
+                #endregion
+
+            }
+            else if (bTarget_TOP == false)
+            {
+                #region FOR BTM REGION : IN-RISE AND IN-FALL
+                if (nDir == DIR_INFALL || nDir == DIR_INRISE)
+                {
+                    for (int x = sx; x < ex; x++)
+                    {
+                        Array.Clear(buff_Org, 0, buff_Org.Length);
+                        for (int y = ey - 1, nIndex = 0; y >= sy - 2; y--)
+                        {
+                            buff_Org[nIndex++] = rawImage[y * imageW + x];
+                        }
+                        double[] buff_2nd = HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+
+                        if (nDir == DIR_INFALL)
+                        {
+                            int minPos = HC_ARRAY_GetMaxElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, minPos);
+
+                            list.Add(new PointF(x, (float)(ey - minPos - fSubPixel)));
+
+                        }
+                        else if (nDir == DIR_INRISE)
+                        {
+                            int maxPos = HC_ARRAY_GetMinElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, maxPos);
+
+                            list.Add(new PointF(x, (float)(ey - maxPos - fSubPixel)));
+                        }
+                    }
+                }
+                #endregion
+
+                #region FOR BTM REGION : EX-RISE AND EX-FALL
+                else if (nDir == DIR_EXFALL || nDir == DIR_EXRISE)
+                {
+                    for (int x = sx; x < ex; x++)
+                    {
+                        Array.Clear(buff_Org, 0, buff_Org.Length);
+                        for (int y = sy, nIndex = 0; y < ey + 2; y++)
+                        {
+                            buff_Org[nIndex++] = rawImage[y * imageW + x];
+                        }
+                        double[] buff_2nd = HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+
+                        if (nDir == DIR_EXFALL)
+                        {
+                            int minPos = HC_ARRAY_GetMaxElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, minPos);
+                            list.Add(new PointF(x, (float)(sy + minPos + fSubPixel)));
+
+                        }
+                        else if (nDir == DIR_EXRISE)
+                        {
+                            int maxPos = HC_ARRAY_GetMinElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, maxPos);
+                            list.Add(new PointF(x, (float)(sy + maxPos + fSubPixel)));
+                        }
+                    }
+                }
+                #endregion
+            }
+
+            return list;
+        }
+        public static List<PointF> HC_EDGE_GetPointList_Derivative_VER(byte[] rawImage, int imageW, int imageH, RectangleF rc, bool bTarget_LFT, int nDir)
+        {
+
+            const int DIR_INFALL = 0;      // Direction = To Inside Falling
+            const int DIR_INRISE = 1;      // Direction = to Inside Rising
+            const int DIR_EXFALL = 2;      // Direction = to outside Falling
+            const int DIR_EXRISE = 3;      // direction = to Outside Rising
+
+            List<PointF> list = new List<PointF>();
+
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            double fSubPixel = 0.0;
+
+            double[] buff_Org = new double[(int)rc.Width + 2];
+
+            if (bTarget_LFT == true)
+            {
+                #region FOR TOP REGION : IN-RISE & IN-FALL
+                if (nDir == DIR_INFALL || nDir == DIR_INRISE)
+                {
+                    for (int y = sy; y < ey; y++)
+                    {
+                        Array.Clear(buff_Org, 0, buff_Org.Length);
+                        for (int x = sx, nIndex = 0; x < ex + 2; x++)
+                        {
+                            buff_Org[nIndex++] = rawImage[y * imageW + x];
+                        }
+                        double[] buff_2nd = HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+
+                        if (nDir == DIR_INFALL)
+                        {
+                            int maxPos = HC_ARRAY_GetMaxElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, maxPos);
+                            list.Add(new PointF((float)(sx + maxPos + fSubPixel), y));
+                        }
+                        else if (nDir == DIR_INRISE)
+                        {
+                            int minPos = HC_ARRAY_GetMinElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, minPos);
+                            list.Add(new PointF((float)(sx + minPos + fSubPixel), y));
+                        }
+
+                    }
+                }
+                #endregion
+
+                #region FOR TOP REGION : IN-RISE AND IN-FALL
+                else if (nDir == DIR_EXFALL || nDir == DIR_EXRISE)
+                {
+                    for (int y = sy; y < ey; y++)
+                    {
+                        Array.Clear(buff_Org, 0, buff_Org.Length);
+                        for (int x = ex - 1, nIndex = 0; x >= sx - 2; x--)
+                        {
+                            buff_Org[nIndex++] = rawImage[y * imageW + x];
+                        }
+                        double[] buff_2nd = HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+
+                        if (nDir == DIR_EXFALL)
+                        {
+                            int maxPos = HC_ARRAY_GetMaxElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, maxPos);
+                            list.Add(new PointF((float)(ex - maxPos - fSubPixel), y));
+                        }
+                        else if (nDir == DIR_EXRISE)
+                        {
+                            int minPos = HC_ARRAY_GetMinElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, minPos);
+                            list.Add(new PointF((float)(ex - minPos - fSubPixel), y));
+                        }
+                    }
+                }
+                #endregion
+            }
+            else if (bTarget_LFT == false)
+            {
+                #region FOR BTM REGION : IN-RISE AND IN-FALL
+
+                if (nDir == DIR_INFALL || nDir == DIR_INRISE)
+                {
+                    for (int y = sy; y < ey; y++)
+                    {
+                        Array.Clear(buff_Org, 0, buff_Org.Length);
+                        for (int x = ex - 1, nIndex = 0; x >= sx - 2; x--)
+                        {
+                            buff_Org[nIndex++] = rawImage[y * imageW + x];
+                        }
+                        double[] buff_RHT_2nd = HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+
+                        if (nDir == DIR_INFALL)
+                        {
+
+                            int maxPos = HC_ARRAY_GetMaxElementPosition(buff_RHT_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_RHT_2nd, maxPos);
+                            list.Add(new PointF((float)(ex - maxPos - fSubPixel), y));
+                        }
+                        else if (nDir == DIR_INRISE)
+                        {
+                            int minPos = HC_ARRAY_GetMinElementPosition(buff_RHT_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_RHT_2nd, minPos);
+                            list.Add(new PointF((float)(ex - minPos - fSubPixel), y));
+                        }
+                    }
+                }
+                #endregion
+
+                #region FOR BTM REGION : EX-RISE AND EX-FALL
+                else if (nDir == DIR_EXFALL || nDir == DIR_EXRISE)
+                {
+                    for (int y = sy; y < ey; y++)
+                    {
+                        Array.Clear(buff_Org, 0, buff_Org.Length);
+                        for (int x = sx, nIndex = 0; x < ex + 2; x++)
+                        {
+                            buff_Org[nIndex++] = rawImage[y * imageW + x];
+                        }
+                        double[] buff_2nd = HC_EDGE_Get2ndDerivativeArrayFromLineBuff(buff_Org);
+                        if (nDir == DIR_EXFALL)
+                        {
+                            int maxPos = HC_ARRAY_GetMaxElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, maxPos);
+                            list.Add(new PointF((float)(sx + maxPos + fSubPixel), y));
+                        }
+                        else if (nDir == DIR_EXRISE)
+                        {
+                            int minPos = HC_ARRAY_GetMinElementPosition(buff_2nd);
+                            fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(buff_2nd, minPos);
+
+                            list.Add(new PointF((float)(sx + minPos + fSubPixel), y));
+                        }
+                    }
+                }
+                #endregion
+            }
+            return list;
+        }
+
 
         // get the X difference from the list points    161129
         static public double HC_EDGE_GetDifferenceX(List<PointF> listPoints)
@@ -879,7 +1498,6 @@ namespace ReinlessLib
             return arrPosY.Max() - arrPosY.Min();
 
         }
-        // get the Y difference from the list points 161129
         static public double HC_EDGE_GetDifferenceY(List<PointF> listPoints)
         {
             PointF[] arrPoints = listPoints.ToArray();
@@ -893,8 +1511,18 @@ namespace ReinlessLib
             return arrPosY.Max() - arrPosY.Min();
         }
 
+        //*******************************************************************************************
+        // Zerocrossing 
+        //*******************************************************************************************
 
-        public static double GetZeroCrossingPt(byte [] buff, int sign, double mag )
+        /// <summary> 170426 : cd-meter project
+        /// GetThe zerocrossing point from the line buff
+        /// </summary>
+        /// <param name="buff"></param>
+        /// <param name="sign"></param>
+        /// <param name="mag"></param>
+        /// <returns></returns>
+        public static double HC_EDGE_GetZeroCrossingPointFromLineBuff(byte [] buff, int sign, double mag )
         {
             int [] differFST = new int[buff.Length];
             int [] differSCD = new int[buff.Length];
@@ -953,18 +1581,596 @@ namespace ReinlessLib
              return ptEdge;
          }
 
-
-        public static float[] GetElements_X(List<PointF> list)
+        // for overlay 방향에 따른 제로크로싱 리스트를 계산
+        public static List<PointF> HC_EDGE_GetRawPoints_Hor_ZeroCross(byte[] rawImage, int imageW, int imageH, RectangleF rc, bool bTarget_TOP, int nDir, double mag)
         {
-            float[] arrX = (float[])list.Select(element => element.X).ToArray();
-            return arrX;
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            byte[] buffLine = new byte[ey - sy];
+
+            List<PointF> list = new List<PointF>();
+
+            // top side reverse 
+            if (bTarget_TOP == true)
+            {
+                for (int x = sx; x < ex; x++)
+                {
+                    Array.Clear(buffLine, 0, buffLine.Length);
+                    for (int y = ey - 1, nIndex = 0; y >= sy; y--)
+                    {
+                        buffLine[nIndex++] = rawImage[y * imageW + x];
+                    }
+
+                    double fSubPos = HC_EDGE_GetZeroCrossingPointFromLineBuff(buffLine, nDir, mag);
+                    list.Add(new PointF(x, ey - (float)fSubPos));
+                }
+            }
+            // btm side 
+            else if (bTarget_TOP == false)
+            {
+                for (int x = sx; x < ex; x++)
+                {
+                    Array.Clear(buffLine, 0, buffLine.Length);
+                    for (int y = sy, nIndex = 0; y < ey; y++)
+                    {
+                        buffLine[nIndex++] = rawImage[y * imageW + x];
+                    }
+                    double fSubPos = HC_EDGE_GetZeroCrossingPointFromLineBuff(buffLine, nDir, mag);
+                    list.Add(new PointF(x, sy + (float)fSubPos));
+                }
+            }
+            return list;
         }
-        public static float[] GetElements_Y(List<PointF> list)
+        public static List<PointF> HC_EDGE_GetRawPoints_VER_ZeroCross(byte[] rawImage, int imageW, int imageH, RectangleF rc, bool bTarget_LFT, int nDir, double mag)
         {
-            float[] arrY = (float[])list.Select(element => element.Y).ToArray();
-            return arrY;
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            byte[] buffLine = new byte[ex - sx];
+
+            List<PointF> list = new List<PointF>();
+
+            // top side reverse 
+            if (bTarget_LFT == true)
+            {
+                for (int y = sy; y < ey; y++)
+                {
+                    Array.Clear(buffLine, 0, buffLine.Length);
+                    for (int x = ex - 1, nIndex = 0; x >= sx; x--)
+                    {
+                        buffLine[nIndex++] = rawImage[y * imageW + x];
+                    }
+                    double fSubPos = HC_EDGE_GetZeroCrossingPointFromLineBuff(buffLine, nDir, mag);
+                    list.Add(new PointF(ex - (float)fSubPos, y));
+                }
+            }
+            // btm side 
+            else if (bTarget_LFT == false)
+            {
+                for (int y = sy; y < ey; y++)
+                {
+                    Array.Clear(buffLine, 0, buffLine.Length);
+                    for (int x = sx, nIndex = 0; x < ex; x++)
+                    {
+                        buffLine[nIndex++] = rawImage[y * imageW + x];
+                    }
+
+                    double fSubPos = HC_EDGE_GetZeroCrossingPointFromLineBuff(buffLine, nDir, mag);
+                    list.Add(new PointF(sx + (float)fSubPos, y));
+                }
+            }
+            return list;
+        }
+        /// <summary> 170426
+        /// 라인버퍼로부터 Min/Max position이 결정된경우 라인버퍼에서 해당 위치에 대해서 전후 subpixeling 하기 : from the LOG Edge detection 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="lineBuff"></param>
+        /// <param name="nPos"></param>
+        /// <returns></returns>
+        public static double HC_EDGE_GetSubPixelFromLineBuff<T>(T[] lineBuff, int nPos)
+        {
+            double pa = 0; double pb = 0; double pc = 0;
+
+            double fSubPixel = 0;
+
+            try
+            {
+                if (nPos != 0 && nPos < lineBuff.Length - 1)
+                {
+                    pa = Convert.ToDouble(lineBuff[nPos - 1]);
+                    pb = Convert.ToDouble(lineBuff[nPos + 0]);
+                    pc = Convert.ToDouble(lineBuff[nPos + 1]);
+
+                    // simple quadratic interpolation
+                    fSubPixel = 0.5 * (pa - pc) / (pa - (2 * pb) + pc);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
+
+            return fSubPixel;
+        }
+        public static double HC_EDGE_GetLogPos(byte[] rawImage, int imageW, int imageH, PointF[] arrPoints, int nSign)
+        {
+            double[] fKernel = HC_FILTER_GetLogKernel(9);
+
+            double[] fImage = new double[arrPoints.Length];
+
+            int KSIZE = (int)Math.Sqrt(fKernel.Length);
+            int GAP = KSIZE / 2;
+
+            for (int i = 0; i < arrPoints.Length; i++)
+            {
+                int x = (int)arrPoints.ElementAt(i).X;
+                int y = (int)arrPoints.ElementAt(i).Y;
+
+                double kernelSum = 0;
+                for (int j = -GAP; j <= GAP; j++)
+                {
+                    for (int k = -GAP; k <= GAP; k++)
+                    {
+                        kernelSum += (fKernel[(j + GAP) * KSIZE + k + GAP] * rawImage[(y - j) * imageW + (x - k)]);
+                    }
+                }
+                fImage[i] = kernelSum;
+            }
+
+            double fValue = 0;
+            int nPos = 0;
+
+            /***/
+            if (nSign == -1) { fValue = fImage.Min(); }
+            else if (nSign == +1) { fValue = fImage.Max(); }
+            nPos = Array.IndexOf(fImage, fValue);
+
+            double fSubPos = HC_EDGE_GetSubPixelFromLineBuff(fImage, nPos);
+
+            return nPos + fSubPos;
+
+        }
+        public static double HC_EDGE_GetLoG_PosMax(byte[] rawImage, int imageW, int imageH, PointF[] list)
+        {
+            double[] arrDerivative = new double[list.Length];
+
+            for (int i = 0; i < list.Length; i++)
+            {
+                int xx = (int)list.ElementAt(i).X;
+                int yy = (int)list.ElementAt(i).Y;
+
+                arrDerivative[i] = rawImage[yy * imageW + xx + 1] + rawImage[yy * imageW + xx - 1] - (2 * rawImage[yy * imageW + xx]);
+            }
+
+            double fMaxVal = arrDerivative.Max();
+            int nMaxPos = Array.IndexOf(arrDerivative, fMaxVal);
+
+            double fSubPixel = HC_EDGE_GetSubPixelFromLineBuff(arrDerivative, nMaxPos);
+
+            return nMaxPos + fSubPixel;
+        }
+        public static double HC_EDGE_GetLoG_PosMin(byte[] rawImage, int imageW, int imageH, PointF[] list)
+        {
+            double[] arrDerivative = new double[list.Length];
+
+            for (int i = 0; i < list.Length; i++)
+            {
+                int xx = (int)list.ElementAt(i).X;
+                int yy = (int)list.ElementAt(i).Y;
+
+                arrDerivative[i] = rawImage[(yy + 0) * imageW + xx + 1] +
+                                   rawImage[(yy + 0) * imageW + xx - 1] +
+                                   rawImage[(yy + 1) * imageW + xx + 0] +
+                                   rawImage[(yy - 1) * imageW + xx + 0] -
+                                   (4 * rawImage[yy * imageW + xx]);
+            }
+
+            double fMin = arrDerivative.Min();
+            int nMinPos = Array.IndexOf(arrDerivative, fMin);
+
+            double fSubpixel = HC_EDGE_GetSubPixelFromLineBuff(arrDerivative, nMinPos);
+
+            return nMinPos + fSubpixel;
         }
 
+        public static List<PointF> GetRawPoints_HOR_LOG(byte[] rawImage, int imageW, int imageH, RectangleF rc, bool bTarget_TOP, int nDir)
+        {
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            PointF[] buffPoints = new PointF[(int)rc.Height];
+
+            List<PointF> list = new List<PointF>();
+
+            // top side reverse 
+            if (bTarget_TOP == true)
+            {
+                for (int x = sx; x < ex; x++)
+                {
+                    Array.Clear(buffPoints, 0, buffPoints.Length);
+                    for (int y = ey - 1, nIndex = 0; y >= sy; y--)
+                    {
+                        buffPoints[nIndex++] = new PointF(x, y);
+                    }
+
+                    double fSubPos = HC_EDGE_GetLogPos(rawImage, imageW, imageH, buffPoints, nDir);
+                    list.Add(new PointF(x, ey - (float)fSubPos));
+                }
+            }
+            // btm side 
+            else if (bTarget_TOP == false)
+            {
+                for (int x = sx; x < ex; x++)
+                {
+                    Array.Clear(buffPoints, 0, buffPoints.Length);
+                    for (int y = sy, nIndex = 0; y < ey; y++)
+                    {
+                        buffPoints[nIndex++] = new PointF(x, y);
+                    }
+
+                    double fSubPos = HC_EDGE_GetLogPos(rawImage, imageW, imageH, buffPoints, nDir);
+                    list.Add(new PointF(x, sy + (float)fSubPos));
+                }
+
+            }
+            return list;
+        }
+        public static List<PointF> GetRawPoints_VER_LOG(byte[] rawImage, int imageW, int imageH, RectangleF rc, bool bTarget_LFT, int nDir)
+        {
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            PointF[] buffPoints = new PointF[(int)rc.Width];
+
+            List<PointF> list = new List<PointF>();
+
+            // top side reverse 
+            if (bTarget_LFT == true)
+            {
+                for (int y = sy; y < ey; y++)
+                {
+                    Array.Clear(buffPoints, 0, buffPoints.Length);
+                    for (int x = ex - 1, nIndex = 0; x >= sx; x--)
+                    {
+                        buffPoints[nIndex++] = new PointF(x, y);
+                    }
+                    double fSubPos = HC_EDGE_GetLogPos(rawImage, imageW, imageH, buffPoints, nDir);
+
+                    list.Add(new PointF(ex - (float)fSubPos, y));
+                }
+            }
+            // btm side 
+            else if (bTarget_LFT == false)
+            {
+                for (int y = sy; y < ey; y++)
+                {
+                    Array.Clear(buffPoints, 0, buffPoints.Length);
+                    for (int x = sx, nIndex = 0; x < ex; x++)
+                    {
+                        buffPoints[nIndex++] = new PointF(x, y);
+                    }
+                    double fSubPos = HC_EDGE_GetLogPos(rawImage, imageW, imageH, buffPoints, nDir);
+                    list.Add(new PointF(sx + (float)fSubPos, y));
+                }
+            }
+            return list;
+        }
+        /// <summary> 170426
+        /// If there is floating position, make the bilinear interpolation value
+        /// </summary>
+        /// <param name="rawImage"></param>
+        /// <param name="imageW"></param>
+        /// <param name="imageH"></param>
+        /// <param name="px"></param>
+        /// <param name="py"></param>
+        /// <returns></returns>
+        public static double HC_GetInterpolatedValue(byte[] rawImage, int imageW, int imageH, float px, float py)
+        {
+            double cx = px;
+            double cy = py;
+            int x1 = (int)Math.Floor(cx);
+            int x2 = (int)Math.Ceiling(cx);
+            int y1 = (int)Math.Floor(cy);
+            int y2 = (int)Math.Ceiling(cy);
+
+            int q11 = rawImage[y1 * imageW + x1];
+            int q12 = rawImage[y2 * imageW + x1];
+            int q21 = rawImage[y1 * imageW + x2];
+            int q22 = rawImage[y2 * imageW + x2];
+
+            double fInterplated = _GetBilinearInterpolation(cx, cy, x1, x2, y1, y2, q11, q12, q21, q22);
+            return fInterplated;
+        }
+        public static double _GetBilinearInterpolation(double cx, double cy, double x1, double x2, double y1, double y2, double q11, double q12, double q21, double q22)
+        {
+            double r1 = (((x2 - cx) / (x2 - x1)) * q11) + (((cx - x1) / (x2 - x1)) * q21);
+            double r2 = (((x2 - cx) / (x2 - x1)) * q12) + (((cx - x1) / (x2 - x1)) * q22);
+            double pvalue = (((y2 - cy) / (y2 - y1)) * r1) + (((cy - y1) / (y2 - y1)) * r2);
+            return pvalue;
+        }
+
+        //*******************************************************************************************
+        // Prewitt based Edge detection 
+        //*******************************************************************************************
+
+        // 단순 Prewitt 연산 array 만 받는다 
+        public static double[] GetPrewitBuffLine(byte[] buffLine, int nMeasureType)
+        {
+            const int RISING = 0;
+            const int FALLING = 1;
+
+            double[] profile = new double[buffLine.Length];
+
+            // accumulation for each position
+            for (int nIndex = 1; nIndex < buffLine.Length - 1; nIndex++)
+            {
+                if (nMeasureType == RISING)
+                {
+                    profile[nIndex] += buffLine[(nIndex + 1)] - buffLine[(nIndex - 1)];
+                }
+                else if (nMeasureType == FALLING)
+                {
+                    profile[nIndex] += buffLine[(nIndex - 1)] - buffLine[(nIndex + 1)];
+                }
+            }
+
+            return profile;
+        }
+        //  capsulated Edge detection function for only horizontal and vertical  170412 
+        public static List<PointF> GetRawPoints_HOR_Prewitt(byte[] rawImage, int imageW, int imageH, RectangleF rc, bool bTarget_TOP, int nDir)
+        {
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            byte[] buffLine = new byte[ey - sy];
+
+            List<PointF> list = new List<PointF>();
+
+            // top side reverse 
+            if (bTarget_TOP == true)
+            {
+                for (int x = sx; x < ex; x++)
+                {
+                    Array.Clear(buffLine, 0, buffLine.Length);
+                    for (int y = sy, nIndex = 0; y < ey; y++)
+                    {
+                        buffLine[nIndex++] = rawImage[y * imageW + x];
+                    }
+                    double[] projH = _GetPrewitBuffLine(buffLine, nDir);
+                    float yy = (float)_GetNewtonRapRes(projH);
+
+                    list.Add(new PointF(x, (float)(sy + yy)));
+                }
+            }
+            // btm side 
+            else if (bTarget_TOP == false)
+            {
+                for (int x = sx; x < ex; x++)
+                {
+                    Array.Clear(buffLine, 0, buffLine.Length);
+                    for (int y = ey - 1, nIndex = 0; y >= sy; y--)
+                    {
+                        buffLine[nIndex++] = rawImage[y * imageW + x];
+                    }
+                    double[] projH = GetPrewitBuffLine(buffLine, nDir);
+                    float yy = (float)_GetNewtonRapRes(projH);
+
+                    list.Add(new PointF(x, (float)(ey + yy)));
+                }
+            }
+            return list;
+        }
+        public static List<PointF> GetRawPoints_VER_Prewitt(byte[] rawImage, int imageW, int imageH, RectangleF rc, bool bTarget_LFT, int nDir)
+        {
+            // get joint points positions
+            int sx = (int)rc.X;
+            int ex = (int)rc.Width + sx;
+            int sy = (int)rc.Y;
+            int ey = (int)rc.Height + sy;
+
+            byte[] buffLine = new byte[ex - sx];
+
+            List<PointF> list = new List<PointF>();
+
+            // top side reverse 
+            if (bTarget_LFT == true)
+            {
+
+                for (int y = sy; y < ey; y++)
+                {
+                    Array.Clear(buffLine, 0, buffLine.Length);
+                    for (int x = ex - 1, nIndex = 0; x >= sx; x--)
+                    {
+                        buffLine[nIndex++] = rawImage[y * imageW + x];
+                    }
+                    double[] projV = GetPrewitBuffLine(buffLine, nDir);
+                    float xx = (float)_GetNewtonRapRes(projV);
+
+                    list.Add(new PointF(ex - xx, y));
+                }
+            }
+            // btm side 
+            else if (bTarget_LFT == false)
+            {
+                for (int y = sy; y < ey; y++)
+                {
+                    for (int x = sx, nIndex = 0; x < ex; x++)
+                    {
+                        buffLine[nIndex++] = rawImage[y * imageW + x];
+                    }
+                    double[] projV = GetPrewitBuffLine(buffLine, nDir);
+                    float xx = (float)_GetNewtonRapRes(projV);
+
+                    list.Add(new PointF(sx + xx, y));
+                }
+            }
+            return list;
+        }
+        public static double[] _GetPrewitBuffLine(byte[] buffLine, int nMeasureType)
+        {
+            const int RISING = 0;
+            const int FALLING = 1;
+
+            double[] profile = new double[buffLine.Length];
+
+            // accumulation for each position
+            for (int nIndex = 1; nIndex < buffLine.Length - 1; nIndex++)
+            {
+                if (nMeasureType == RISING)
+                {
+                    profile[nIndex] += buffLine[(nIndex + 1)] - buffLine[(nIndex - 1)];
+                }
+                else if (nMeasureType == FALLING)
+                {
+                    profile[nIndex] += buffLine[(nIndex - 1)] - buffLine[(nIndex + 1)];
+                }
+            }
+
+            return profile;
+        }
+        public static double _NewtonRaphson(double[] pNewton, int szPoly, double tStart)
+        {
+            double tSlope = 0;
+            double tPoint = tStart;
+
+            for (int itr = 0; itr < 10; itr++)
+            {
+                double tValue = tSlope = 0.0;
+
+                for (int i = 0; i < szPoly; i++)
+                {
+                    tValue += pNewton[i] * Math.Pow(tPoint, (double)(szPoly - 1 - i));
+                }
+                for (int i = 0; i < szPoly - 1; i++)
+                {
+                    tSlope += (double)(szPoly - 1 - i) * pNewton[i] * Math.Pow(tPoint, (double)(szPoly - 2 - i));
+                }
+                double bPoint = tPoint;
+
+                if (Math.Abs(tSlope) < 1e-10) break;
+                if (Math.Abs(tValue) < 1e-16) break;
+
+                tPoint = (tSlope * tPoint - tValue) / tSlope;
+                if (Math.Abs(bPoint - tPoint) < 1e-5) break;
+            }
+            return tPoint;
+        }
+        public static float _GetNewtonRapRes(double[] arrAccProfile)
+        {
+            // set kernel size by default 
+            const int KSIZE = 5;
+            double[][] pMatrix = new double[5][];
+
+            // allocation
+            for (int y = 0; y < KSIZE; y++) { pMatrix[y] = new double[6]; }
+
+            // get max position
+            double fMin = arrAccProfile.Min();
+            int nMinPos = Array.IndexOf(arrAccProfile, fMin);
+
+            // assignment
+            for (int y = 0; y < KSIZE; y++)
+            {
+                for (int x = 0; x < KSIZE; x++)
+                {
+                    pMatrix[y][x] = Math.Pow((double)(y + 1), (double)(KSIZE - 1 - x));
+                }
+                int nPos = (int)(nMinPos - ((KSIZE - 1) / 2.0) + y);
+
+                // additive fuck exception : incase of Position want to place on the asshole 
+                if (nPos > 0 && arrAccProfile.Length > nPos)
+                {
+                    pMatrix[y][KSIZE] = arrAccProfile[nPos];
+                }
+                else
+                {
+                    pMatrix[y][KSIZE] = 0;
+                }
+            }
+
+            // fucking gauss
+            _GaussElimination(pMatrix, KSIZE + 1, KSIZE);
+
+            double[] pNewton = new double[KSIZE];
+
+            for (int x = 0; x < KSIZE - 1; x++)
+            {
+                pNewton[x] = (double)(KSIZE - 1 - x) * pMatrix[x][KSIZE];
+            }
+
+            double NRValue = _NewtonRaphson(pNewton, KSIZE - 1, (double)(KSIZE + 1) / 2.0);
+
+            // set fucking value
+            return Convert.ToSingle(nMinPos + NRValue);
+        }
+        public static void _GaussElimination(double[][] pMatrix, int szX, int szY)
+        {
+            // X must be bigger than Y by 1
+
+            // Left Diagonal
+            for (int i = 0; i < szX - 2; i++)
+            {
+                for (int j = i + 1; j < szY; j++)
+                {
+                    if (pMatrix[j][i] * pMatrix[i][i] != double.NaN)
+                    {
+                        double eCoeff = pMatrix[j][i] / pMatrix[i][i];
+                        for (int k = i; k < szX; k++)
+                        {
+                            pMatrix[j][k] = pMatrix[j][k] - pMatrix[i][k] * eCoeff;
+                        }
+                    }
+                }
+            }
+
+            // Right Diagonal
+            for (int j = 0; j < szY - 1; j++)
+            {
+                for (int i = j + 1; i < szX - 1; i++)
+                {
+                    if (pMatrix[j][i] * pMatrix[i][i] != double.NaN)
+                    {
+                        double eCoeff = pMatrix[j][i] / pMatrix[i][i];
+                        for (int k = i; k < szX; k++)
+                        {
+                            pMatrix[j][k] = pMatrix[j][k] - pMatrix[i][k] * eCoeff;
+                        }
+                    }
+                }
+            }
+
+            for (int j = 0; j < szY; j++)
+            {
+                if (pMatrix[j][j] != double.NaN)
+                {
+                    double eCoeff = pMatrix[j][j];
+                    pMatrix[j][j] = 1.0;
+                    pMatrix[j][szX - 1] = pMatrix[j][szX - 1] / eCoeff;
+                }
+            }
+        }
+
+        //********************************************************************************************************************************
+        // Point Filtering
+        //********************************************************************************************************************************
 
         // fitering functions for the horizontal and vertical rectangle boundary 170412 
         public static List<PointF> GetList_FilteredBy_TY_BY(List<PointF> list, double fTY, double fBY, double fThreshold)

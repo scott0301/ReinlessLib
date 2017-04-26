@@ -284,7 +284,11 @@ namespace ReinlessLib
             return powImage;
         }
 
-       
+        public static byte EnsureByteValue(object value)
+        {
+            double result /*****/= (double)value; ;
+            return (byte)result > 255 ? (byte)255 : (byte)result < 0 ? (byte)0 : (byte)result;
+        }
 
       
 
