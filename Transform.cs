@@ -65,9 +65,7 @@ namespace ReinlessLib
                 {
                     double f = fSigma * ((double)i - 127.0) + 127.0;
 
-                    if (double.IsNaN(f) == true) f = 0;
-
-                    LUT[i] = Convert.ToByte(f);
+                    LUT[i] = EnsureByte(f);
                 }
             }
 
@@ -79,6 +77,54 @@ namespace ReinlessLib
 
             return rawImage;
         }
+
+        // 170428 sigmoidar contarst correction
+        public static byte[] HC_TRANS_SIGMOID_Contrast(byte[] rawImage, int imageW, int imageH, double fCutoff, double fGain)
+        {
+            double[] fImage = CReinlessLib.HC_CONV_Byte2Double(rawImage);
+
+            double min = fImage.Min();
+            Parallel.For(0, fImage.Length, i => { fImage[i] -= min; });
+
+            // devision max
+            double max = fImage.Max();
+
+            Parallel.For(0, fImage.Length, i => { fImage[i] /= max; });
+
+            // case 2 : gamma 
+            Parallel.For(0, fImage.Length, i =>
+            {
+                double fValue = (fCutoff - fImage[i]) * fGain;
+                fImage[i] = 1.0 / (1.0 + Math.Exp(fValue));
+            });
+
+            return CReinlessLib.HC_CONV_GetNormalizedImage(fImage);
+
+        }
+        // 170428 sigmoidal gamma correction
+        public static byte[] HC_TRANS_SIGMOID_Gamma(byte[] rawImage, int imageW, int imageH, double fCutoff, double fGain)
+        {
+            double[] fImage = CReinlessLib.HC_CONV_Byte2Double(rawImage);
+
+            double min = fImage.Min();
+            Parallel.For(0, fImage.Length, i => { fImage[i] -= min; });
+
+            // devision max
+            double max = fImage.Max();
+
+            Parallel.For(0, fImage.Length, i => { fImage[i] /= max; });
+
+            // case 2 : gamma 
+            Parallel.For(0, fImage.Length, i =>
+            {
+                double fValue = (fCutoff - fImage[i]) * fGain;
+                fImage[i] = Math.Pow(fImage[i], 1.0 / fGain);
+            });
+
+            return CReinlessLib.HC_CONV_GetNormalizedImage(fImage);
+
+        }
+
         public static byte[] HC_TRANS_Brightness(byte[] rawImage, int imageW, int imageH, int nIncrement)
         {
             byte[] newRaw = new byte[imageW * imageH];
@@ -391,7 +437,7 @@ namespace ReinlessLib
         }
 
         // Polar croodinate cropping
-        // 입력된 rectangle의 polar croodinate에 대한 cropping 결과를 return 
+        // 입력된 rectangle의 polar croodinate에 대한 cropping 결과를 return --> pixelation event occured. --> interpolation 적용
         public static byte[] HC_CropImage_Polar(byte[] rawInput, int imageW, int imageH, RectangleF rc)
         {
             int nCX = Convert.ToInt32(rc.Width / 2.0);
@@ -422,6 +468,55 @@ namespace ReinlessLib
             }
             return rawPolar;
         }
+        // interpolated polar transfrom --> plxelation occured --> enhanced version 170518 updated
+        public static byte[] HC_CropImage_Interpolated_Polar(byte[] rawInput, int imageW, int imageH, RectangleF rc)
+        {
+            int nCX = Convert.ToInt32(rc.Width / 2.0);
+            int nCY = Convert.ToInt32(rc.Height / 2.0);
+            int nRadius = Math.Max(nCX, nCY);
+
+            nCX += (int)rc.X;
+            nCY += (int)rc.Y;
+
+            byte[] rawPolar = new byte[360 * nRadius];
+
+            for (int na = 0; na < 360; na++)
+            {
+                int nPolarY = nRadius;
+                for (int nr = 0; nr < nRadius; nr++)
+                {
+                    double fDegree = ((na - 90.0) * Math.PI / 180.0);
+
+                    double x = nCX + ((double)nr * Math.Cos(fDegree));
+                    double y = nCY + ((double)nr * Math.Sin(fDegree));
+
+                    if (x < 0 || y < 0 || x >= imageW || y >= imageH) { continue; }
+
+                    int x1 = (int)Math.Floor(x);
+                    int x2 = (int)Math.Ceiling(x);
+                    int y1 = (int)Math.Floor(y);
+                    int y2 = (int)Math.Ceiling(y);
+
+                    int q11 = rawInput[y1 * imageW + x1];
+                    int q12 = rawInput[y2 * imageW + x1];
+                    int q21 = rawInput[y1 * imageW + x2];
+                    int q22 = rawInput[y2 * imageW + x2];
+
+                    double fInterplated = GetInterPolatedValue(x, y, x1, x2, y1, y2, q11, q12, q21, q22);
+
+                    byte valueOrg = rawInput[(int)y * imageW + (int)x];
+
+                    byte value = fInterplated < 0 ? (byte)0 : fInterplated > 255 ? (byte)255 : (byte)fInterplated;
+
+                    if (double.IsNaN(fInterplated) == true) value = valueOrg;
+
+                    rawPolar[--nPolarY * 360 + na] = value;
+                }
+            }
+            return rawPolar;
+        }
+
+
         // rotated rectangle Cropping
         // Rotated Recangle의 Unroated Rectangle을 Cropping 하여 반환
         public static byte[] HC_CropImage_Rotate(byte[] rawInput, int imageW, int imageH, RectangleF rc, PointF ptGravity, float fAngle)

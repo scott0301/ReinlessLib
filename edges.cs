@@ -1512,7 +1512,7 @@ namespace ReinlessLib
         }
 
         //*******************************************************************************************
-        // Zerocrossing 
+        // Zerocrossing based Edge detection
         //*******************************************************************************************
 
         /// <summary> 170426 : cd-meter project
@@ -1668,6 +1668,11 @@ namespace ReinlessLib
             }
             return list;
         }
+
+
+        //*******************************************************************************************
+        // Laplacian of Gaussian based Edge detection
+        //*******************************************************************************************
         /// <summary> 170426
         /// 라인버퍼로부터 Min/Max position이 결정된경우 라인버퍼에서 해당 위치에 대해서 전후 subpixeling 하기 : from the LOG Edge detection 
         /// </summary>

@@ -22,9 +22,9 @@ namespace ReinlessLib
             {
                 Parallel.For(0, fArray.Length, i =>
                 {
-                    /***/if (fArray[i] < 000) byteArray[i] = 000;
-                    else if (fArray[i] > 255) byteArray[i] = 255;
-                    else byteArray[i] = Convert.ToByte(fArray[i]);
+                    double fValue = fArray[i];
+                    fValue = fValue < 0x0 ? 0x0 : fValue > 0xff ? 0xff : fValue;
+                    byteArray[i] = (byte)fValue;
                 });
 
             }
@@ -35,10 +35,9 @@ namespace ReinlessLib
 
             Parallel.For(0, rawImage.Length, i =>
             {
-                /***/
-                if (fArray[i] < 000) rawImage[i] = 000;
-                else if (fArray[i] > 255) rawImage[i] = 255;
-                else rawImage[i] = Convert.ToByte(fArray[i]);
+                double fValue = fArray[i];
+                fValue = fValue < 0x0 ? 0x0 : fValue > 0xff ? 0xff : fValue;
+                rawImage[i] = (byte)fValue;
 
             });
 
@@ -284,8 +283,10 @@ namespace ReinlessLib
             return powImage;
         }
 
-        public static byte EnsureByteValue(object value)
+        public static byte EnsureByte(object value)
         {
+            if (double.IsNaN((double)value) == true) return 0;
+ 
             double result /*****/= (double)value; ;
             return (byte)result > 255 ? (byte)255 : (byte)result < 0 ? (byte)0 : (byte)result;
         }

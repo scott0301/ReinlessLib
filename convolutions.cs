@@ -420,6 +420,115 @@ namespace ReinlessLib
             return HC_CONV_GetNormalizedImage(fImage); ;
         }
 
+
+        
+
+        public static byte[] HC_FILTER_ADF(byte[] rawImage, int imageW, int imageH, double fKappa, double iter, double fDelta)
+        {
+            double[] KernelN = new double[9] { 0, 1, 0, 0, -1, 0, 0, 0, 0 };
+            double[] KernelS = new double[9] { 0, 0, 0, 0, -1, 0, 0, 1, 0 };
+            double[] KernelE = new double[9] { 0, 0, 0, 0, -1, 1, 0, 0, 0 };
+            double[] KernelW = new double[9] { 0, 0, 0, 1, -1, 0, 0, 0, 0 };
+            double[] KernelNE = new double[9] { 0, 0, 1, 0, -1, 0, 0, 0, 0 };
+            double[] KernelSE = new double[9] { 0, 0, 0, 0, -1, 0, 0, 0, 1 };
+            double[] KernelSW = new double[9] { 0, 0, 0, 0, -1, 0, 1, 0, 0 };
+            double[] KernelNW = new double[9] { 1, 0, 0, 0, -1, 0, 0, 0, 0 };
+
+
+            double[] rawImageN = new double[imageW * imageH];
+            double[] rawImageS = new double[imageW * imageH];
+            double[] rawImageE = new double[imageW * imageH];
+            double[] rawImageW = new double[imageW * imageH];
+            double[] rawImageNE = new double[imageW * imageH];
+            double[] rawImageSE = new double[imageW * imageH];
+            double[] rawImageSW = new double[imageW * imageH];
+            double[] rawImageNW = new double[imageW * imageH];
+
+            double[] diffusN = new double[imageW * imageH];
+            double[] diffusS = new double[imageW * imageH];
+            double[] diffusE = new double[imageW * imageH];
+            double[] diffusW = new double[imageW * imageH];
+
+            double[] diffusNE = new double[imageW * imageH];
+            double[] diffusSE = new double[imageW * imageH];
+            double[] diffusNW = new double[imageW * imageH];
+            double[] diffusSW = new double[imageW * imageH];
+
+
+            double[] fImage = HC_CONV_Byte2Double(rawImage);
+
+            double dx = 1.0 / Math.Pow(1.0, 2);
+            double dy = 1.0 / Math.Pow(1.0, 2);
+            double dxy = 1.0 / Math.Pow(Math.Sqrt(2), 2);
+
+            for (int loop = 0; loop < iter; loop++)
+            {
+                rawImageN = HC_FILTER_Convolution(KernelN, fImage, imageW, imageH);
+                rawImageS = HC_FILTER_Convolution(KernelS, fImage, imageW, imageH);
+                rawImageE = HC_FILTER_Convolution(KernelE, fImage, imageW, imageH);
+                rawImageW = HC_FILTER_Convolution(KernelW, fImage, imageW, imageH);
+
+                rawImageNE = HC_FILTER_Convolution(KernelNE, fImage, imageW, imageH);
+                rawImageSE = HC_FILTER_Convolution(KernelSE, fImage, imageW, imageH);
+                rawImageNW = HC_FILTER_Convolution(KernelNW, fImage, imageW, imageH);
+                rawImageSW = HC_FILTER_Convolution(KernelSW, fImage, imageW, imageH);
+
+                CalcDifussion(rawImageN, diffusN, fKappa);
+                CalcDifussion(rawImageS, diffusS, fKappa);
+                CalcDifussion(rawImageE, diffusE, fKappa);
+                CalcDifussion(rawImageW, diffusW, fKappa);
+
+                CalcDifussion(rawImageNE, diffusNE, fKappa);
+                CalcDifussion(rawImageSE, diffusSE, fKappa);
+                CalcDifussion(rawImageNW, diffusNW, fKappa);
+                CalcDifussion(rawImageSW, diffusSW, fKappa);
+
+                Parallel.For(0, imageW * imageH, i =>
+                {
+                    fImage[i] = fImage[i] + fDelta *
+                        (
+                              diffusN[i] * rawImageN[i] * dx
+                            + diffusS[i] * rawImageS[i] * dx
+                            + diffusE[i] * rawImageE[i] * dy
+                            + diffusW[i] * rawImageW[i] * dy
+                            + diffusNE[i] * rawImageNE[i] * dxy
+                            + diffusSE[i] * rawImageSE[i] * dxy
+                            + diffusNW[i] * rawImageNW[i] * dxy
+                            + diffusSW[i] * rawImageSW[i] * dxy
+                        ); ;
+                });
+
+            }
+
+            CalcDiffuseNormal(fImage);
+            HC_CONV_Double2Byte(fImage, rawImage);
+
+            return rawImage;
+        }
+        private static double[] CalcDifussion(double[] rawImage, double[] fImage, double fkappa)
+        {
+            int nLength = rawImage.Length;
+
+            Parallel.For(0, nLength, i =>
+            {
+                fImage[i] = Math.Exp(-Math.Pow((rawImage[i] / fkappa), 2));
+            });
+
+            return fImage;
+        }
+        private static void CalcDiffuseNormal(double[] fImage)
+        {
+            double fMax = fImage.Max();
+            double fMin = fImage.Min();
+
+            double fRange = fMax - fMin;
+
+            Parallel.For(0, fImage.Length, i =>
+            {
+                fImage[i] = (fImage[i] - fMin) / fRange;
+                fImage[i] *= 255;
+            });
+        }
         //*****************************************************************************************
         // Prewitt
         //*****************************************************************************************

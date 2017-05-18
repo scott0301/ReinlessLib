@@ -276,9 +276,16 @@ namespace ReinlessLib
             });
         }
 
+        /// <summary>
+        /// 비율에 따른 영상 커팅 
+        /// </summary>
+        /// <param name="rawImage"></param>
+        /// <param name="imageW"></param>
+        /// <param name="imageH"></param>
+        /// <param name="fFactor"></param>
+        /// <returns></returns>
         public static byte[] HC_FILL_WeightFiller(byte[] rawImage, int imageW, int imageH, double fFactor)
         {
-
             Array.Copy(rawImage, rawImage, rawImage.Length);
 
             int nMax = rawImage.Max();

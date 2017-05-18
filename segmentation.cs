@@ -415,5 +415,65 @@ namespace ReinlessLib
 
             return rc;
         }
+        /// <summary>
+        /// 추출된 Rectangle List에서 Overlapped Rectangle Ellimination 
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="nInflateSize"></param>
+        /// <returns></returns>
+        public static List<Rectangle> HC_BLOB_GetMergedList(List<Rectangle> list, int nInflateSize)
+        {
+            float MERGE_INFLATE = 4;
+            float MERGE_HALF = Convert.ToSingle(MERGE_INFLATE / 2.0);
+
+            bool bOverlapped = true;
+
+            while (bOverlapped == true)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    for (int j = 1; j < list.Count; j++)
+                    {
+                        if (list.ElementAt(i) == list.ElementAt(j)) continue;
+
+                        RectangleF rcOrg = new RectangleF(list.ElementAt(i).X, list.ElementAt(i).Y, list.ElementAt(i).Width, list.ElementAt(i).Height);
+                        RectangleF rcTar = new RectangleF(list.ElementAt(j).X, list.ElementAt(j).Y, list.ElementAt(j).Width, list.ElementAt(j).Height);
+
+                        rcOrg.Offset(-MERGE_HALF, -MERGE_HALF); rcOrg.Inflate(MERGE_INFLATE, MERGE_INFLATE);
+                        rcTar.Offset(-MERGE_HALF, -MERGE_HALF); rcTar.Inflate(MERGE_INFLATE, MERGE_INFLATE);
+
+                        //if (list.ElementAt(i).IntersectsWith(list.ElementAt(j)) == true)
+                        if (rcOrg.IntersectsWith(rcTar))
+                        {
+                            list[i] = Rectangle.Union(list.ElementAt(i), list.ElementAt(j));
+                            list.RemoveAt(j);
+                            i = list.Count;
+                            break;
+                        }
+                    }
+                }
+
+                int nDupplicate = 0;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    for (int j = 1; j < list.Count; j++)
+                    {
+                        if (list.ElementAt(i) == list.ElementAt(j)) continue;
+                        if (list.ElementAt(i).IntersectsWith(list.ElementAt(j)))
+                        {
+                            nDupplicate++;
+                        }
+                    }
+                }
+
+                if (nDupplicate == 0)
+                {
+                    bOverlapped = false;
+                }
+            }
+
+            return list.ToList();
+        }
     }
 }
